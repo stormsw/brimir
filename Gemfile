@@ -17,7 +17,7 @@ gem 'foundation_rails_helper'
 
 group :development do
   # to use debugger
-  gem 'byebug'
+  #gem 'byebug'
 
   # sqlite database during development
   gem 'sqlite3'
@@ -29,6 +29,8 @@ group :development do
 
   # Spring application pre-loader
   gem 'spring'
+  #windows
+  gem 'tzinfo-data'
 end
 
 group :test do
@@ -39,10 +41,12 @@ group :test do
   gem 'coveralls'
 end
 
-# Optional PostgreSQL for production
-gem 'pg', group: :postgresql
-# Optional MySQL for production
-gem 'mysql2', group: :mysql
+group :production do
+  # Optional PostgreSQL for production
+  gem 'pg', group: :postgresql
+  # Optional MySQL for production
+  #gem 'mysql2', group: :mysql
+end
 
 # authentication
 gem 'devise'

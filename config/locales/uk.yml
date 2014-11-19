@@ -1,20 +1,20 @@
 ﻿#ukranian
 uk:
 # layouts/application
-  new_ticket: New Ticket
+  new_ticket: Новий тікет
   inbox: Вхідні
   mine: Мої
   waiting: Очікує
   closed_tickets: Закриті
   trashed: Видалені
   users: Користувачі
-  rules: Правилаа
+  rules: Правила
   personal_settings: Налаштування
   sign_out: Вийти
   delete: Видалити
 
 # devise/sessions/new
-  sign_in: Підписатись
+  sign_in: Увійти
 
 # devise/shared/links
   forgot_password: Забувся пароль?
@@ -36,9 +36,13 @@ uk:
 # tickets/index
   count_tickets:
     one: '%{count} тікет'
+    few: 'Тікетів: %{count}'
+    many: 'Тікетів: %{count}'
     other: 'Тікетів: %{count}'
   count_tickets_containing:
     one: '%{count} тікет що містить'
+    few: '%{count} тікетів що містить'
+    many: '%{count} тікетів що містить'
     other: '%{count} тікетів що містить'
   priority: Пріорітет
   replies: відповіді
@@ -56,6 +60,8 @@ uk:
   assignee: Призначено
   num_replies:
     one: '%{count} відповідь'
+    few: '%{count} відповіді'
+    many: '%{count} відповіді'
     other: '%{count} відповіді'
   ago: назад
   high: Високий
@@ -123,7 +129,7 @@ uk:
 # users/_form
   account_settings: Налаштування облічки
   only_fill_in_passwords_when_modifying: Заповніть ці два поля тільки якщо бажаєте змінити пароль.
-  user_is_an_agent: Користувач є агентом (ФСБ)
+  user_is_an_agent: Користувач є агентом
   receive_new_ticket_notifications: Receive notifications for new tickets
   email_settings: Email Settings
   save: Зберігти
