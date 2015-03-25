@@ -20,24 +20,27 @@ class NotificationMailerTest < ActionMailer::TestCase
 
   test 'should notify agent of new ticket' do
     ticket = tickets(:problem)
-    ticket.notified_users << User.agents.first
 
     assert_difference 'ActionMailer::Base.deliveries.size' do
-      NotificationMailer.new_ticket(ticket).deliver
+      NotificationMailer.new_ticket(ticket, User.agents.first).deliver_now
     end
 
+    mail = ActionMailer::Base.deliveries.last
+    assert_equal ticket.message_id, mail.message_id
+    assert_equal email_addresses(:support).email, mail['From'].to_s
   end
 
-  test 'should  notify user of new reply' do
+  test 'should notify user of new reply' do
     reply = replies(:solution)
-    reply.notified_users << User.last
 
     assert_difference 'ActionMailer::Base.deliveries.size' do
-      NotificationMailer.new_reply(reply).deliver
+      NotificationMailer.new_reply(reply, User.last).deliver_now
     end
 
     mail = ActionMailer::Base.deliveries.last
     assert_equal "<#{reply.ticket.message_id}>", mail['In-Reply-To'].to_s
+    assert_equal reply.message_id, mail.message_id
+    assert_equal email_addresses(:support).email, mail['From'].to_s
   end
 
 end

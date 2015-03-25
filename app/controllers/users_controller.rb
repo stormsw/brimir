@@ -1,5 +1,5 @@
 # Brimir is a helpdesk system to handle email support requests.
-# Copyright (C) 2012-2014 Ivaldi http://ivaldi.nl
+# Copyright (C) 2012-2015 Ivaldi http://ivaldi.nl
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -18,19 +18,23 @@ class UsersController < ApplicationController
 
   load_and_authorize_resource :user
 
+  before_filter :load_locales, except: :index
+
   def edit
     @user = User.find(params[:id])
-    @time_zones = ActiveSupport::TimeZone.all.map(&:name).sort
   end
 
   def update
     @user = User.find(params[:id])
-    @time_zones = ActiveSupport::TimeZone.all.map(&:name).sort
 
     # if no password was posted, remove from params
     if params[:user][:password] == ''
       params[:user].delete(:password)
       params[:user].delete(:password_confirmation)
+    end
+
+    if current_user == @user
+      params[:user].delete(:agent) # prevent removing own agent permissions
     end
 
     if @user.update_attributes(user_params)
@@ -47,31 +51,15 @@ class UsersController < ApplicationController
   end
 
   def index
-
-    if params[:format].nil?
-      @users = User.ordered.paginate(page: params[:page])
-    elsif params[:format] == 'json'
-      if params[:init].present?
-        @users = params[:q].split(',')
-        @users = @users.map { |user| { id: user, text: user } }
-      else
-        @users = User.by_email(params[:q])
-        @users = @users.map { |user| { id: user.email, text: user.email } }
-      end
-
-      render json: { users: @users }
-    end
-
+    @users = User.ordered.paginate(page: params[:page])
   end
 
   def new
     @user = User.new
-    @time_zones = ActiveSupport::TimeZone.all.map(&:name).sort
   end
 
   def create
     @user = User.new(user_params)
-    @time_zones = ActiveSupport::TimeZone.all.map(&:name).sort
 
     if @user.save
       redirect_to users_url, notice: I18n::translate(:user_added)
@@ -82,6 +70,18 @@ class UsersController < ApplicationController
   end
 
   private
+    def load_locales
+      @time_zones = ActiveSupport::TimeZone.all.map(&:name).sort
+      @locales = []
+
+      Dir.open("#{Rails.root}/config/locales").each do |file|
+        unless ['.', '..'].include?(file)
+          code = file[0...-4] # strip of .yml
+          @locales << [I18n.translate(:language_name, locale: code), code]
+        end
+      end
+    end
+
     def user_params
       attributes = params.require(:user).permit(
           :email,
@@ -92,6 +92,8 @@ class UsersController < ApplicationController
           :agent,
           :notify,
           :time_zone,
+          :locale,
+          :per_page,
           label_ids: []
       )
 

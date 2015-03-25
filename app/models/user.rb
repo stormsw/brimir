@@ -1,5 +1,5 @@
 # Brimir is a helpdesk system to handle email support requests.
-# Copyright (C) 2012-2014 Ivaldi http://ivaldi.nl
+# Copyright (C) 2012-2015 Ivaldi http://ivaldi.nl
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -15,12 +15,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class User < ActiveRecord::Base
-  devise :database_authenticatable, :recoverable, :rememberable, :trackable, :validatable
+  devise Rails.application.config.devise_authentication_strategy, :recoverable,
+    :rememberable, :trackable, :validatable,:omniauthable,
+    omniauth_providers: [:google_oauth2]
 
-  has_many :tickets
-  has_many :replies
-  has_many :labelings, as: :labelable
+  has_many :tickets, dependent: :destroy
+  has_many :replies, dependent: :destroy
+  has_many :labelings, as: :labelable, dependent: :destroy
   has_many :labels, through: :labelings
+
+  # identities for omniauth
+  has_many :identities
+
+  # All ldap users are agents by default, remove/comment this method if this
+  # is not the intended behavior.
+  def ldap_before_save
+    self.agent = true
+  end
 
   scope :agents, -> {
     where(agent: true)
@@ -38,5 +49,4 @@ class User < ActiveRecord::Base
     User.agents
         .where(notify: true)
   end
-
 end

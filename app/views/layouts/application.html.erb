@@ -8,9 +8,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= content_for?(:title) ? yield(:title) : 'Brimir' %></title>
     <%= favicon_link_tag 'favicon.png' %>
-    <%= stylesheet_link_tag 'http://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic' %>
+    <%= stylesheet_link_tag '//fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400italic,600,600italic' %>
     <%= stylesheet_link_tag 'application' %>
     <%= stylesheet_link_tag 'application-print', media: 'print' %>
+    <%= javascript_include_tag 'vendor/modernizr' %>
     <%= csrf_meta_tags %>
   </head>
 
@@ -18,9 +19,9 @@
 
     <% if user_signed_in? %>
       <nav class="top-bar" data-topbar>
-        <ul class="title-area">
+        <ul class="title-area medium-3 large-2">
           <li class="name">
-            <h1><a href="<%= root_path %>">Brimir</a></h1>
+            <h1><a href="<%= root_path %>">BRIMIR</a></h1>
           </li>
           <li class="toggle-topbar menu-icon"><a href="#"><span>Menu</span></a></li>
         </ul>
@@ -28,13 +29,16 @@
         <section class="top-bar-section">
           <!-- Right Nav Section -->
           <ul class="right">
+            <% if can? :manage, EmailAddress %>
+                <li><a href="<%= email_addresses_path %>"><i class="fa fa-envelope fa-fw"></i></a></li>
+            <% end %>
             <% if can? :manage, Rule %>
-                <li><a href="<%= rules_path %>"><%= t(:rules) %></a></li>
+                <li id="joyride-rules"><a href="<%= rules_path %>"><i class="fa fa-random fa-fw"></i></a></li>
             <% end %>
             <% if can? :manage, User %>
-                <li><a href="<%= users_path %>"><%= t(:users) %></a></li>
+                <li id="joyride-users"><a href="<%= users_path %>"><i class="fa fa-users fa-fw"></i></a></li>
             <% end %>
-            <li class="has-dropdown">
+            <li class="has-dropdown" id="joyride-settings">
               <a href="#"><%= current_user.email %></a>
               <ul class="dropdown">
                 <li>
@@ -50,10 +54,6 @@
               </ul>
             </li>
           </ul>
-          <!-- Left Nav Section -->
-          <ul class="left">
-            <li><%= link_to t(:new_ticket), new_ticket_path %></li>
-          </ul>
         </section>
       </nav>
     <% end %>
@@ -61,7 +61,10 @@
     <div class="row collapse">
       <% if user_signed_in? %>
         <aside class="hide-for-small medium-3 large-2 columns">
-          <ul class="off-canvas-list mt">
+          <div class="new-ticket pam">
+            <%= link_to t(:new_ticket), new_ticket_path, class: 'radius tiny expand success button no-mb', id: 'joyride-tickets' %>
+          </div>
+          <ul class="off-canvas-list mtm">
             <li>
               <%= active_elem_if :a, params[:status] == 'open' &&
                   params[:assignee_id].to_i == 0,
@@ -98,7 +101,7 @@
           </ul>
 
           <ul class="off-canvas-list">
-            <li><label><%= t(:labels) %></label></li>
+            <li id="joyride-labels"><label><%= t(:labels) %></label></li>
             <% @labels.each do |label| %>
               <%
                 # toggle label on/off
@@ -107,10 +110,14 @@
                 else
                   p = params.merge(label_id: label.id)
                 end
+                # remove pagination from link, start at first page
+                p.delete(:page)
+                p.delete(:controller)
+                p.delete(:action)
               %>
               <li>
                 <a href="<%= tickets_url(p) %>" class="<%= 'active ' if params[:label_id].to_i == label.id %>hover-icon-a">
-                  <i class="fa fa-square" style="color: <%= label.color %>"></i>
+                  <i class="fa fa-circle-o" style="color: <%= label.color %>"></i>
                   <%= label.name %>
                   <i data-dropdown="label-<%= label.id %>" class="fa fa-toggle-down hover-icon-i"></i>
                 </a>
@@ -118,7 +125,7 @@
                   <% Label::COLORS.each_with_index do |color, index| %>
                     <li>
                       <%= link_to label_path(label, color: index), method: :patch, remote: true do %>
-                        <i class="fa fa-square" style="color: <%= color %>"></i>
+                        <i class="fa fa-circle-o" style="color: <%= color %>"></i>
                       <% end %>
                     </li>
                   <% end %>
@@ -157,6 +164,40 @@
     </div>
 
     <%= javascript_include_tag 'application' %>
+
+    <% if user_signed_in? && current_user.agent? && current_user.sign_in_count == 1 %>
+      <% current_user.sign_in_count += 1 %>
+      <% current_user.save %>
+      <ol class="joyride-list" data-joyride data-options="expose: true;scroll_speed: 1000;">
+        <li data-id="joyride-tickets" data-text="<%= t('joyride.next') %>" data-options="prev_button: false; tip_location: top;">
+          <h4><%= t(:new_ticket) %></h4>
+          <p><%= t('joyride.tickets') %></p>
+        </li>
+        <li data-id="joyride-settings" data-button="<%= t('joyride.next') %>" data-prev-text="<%= t('joyride.previous') %>" data-options="tip_location: right;">
+          <h4><%= t(:personal_settings) %></h4>
+          <p><%= t('joyride.personal_settings') %></p>
+        </li>
+        <li data-id="joyride-labels" data-button="<%= t('joyride.next') %>" data-prev-text="<%= t('joyride.previous') %>" data-options="tip_location: top;">
+          <h4><%= t(:labels) %></h4>
+          <p><%= t('joyride.labels') %></p>
+        </li>
+        <li data-id="joyride-rules" data-button="<%= t('joyride.next') %>" data-prev-text="<%= t('joyride.previous') %>" data-options="tip_location: right;">
+          <h4><%= t(:rules) %></h4>
+          <p><%= t('joyride.rules') %></p>
+        </li>
+        <li data-id="joyride-users" data-button="<%= t('joyride.next') %>" data-prev-text="<%= t('joyride.previous') %>" data-options="tip_location: right;">
+          <h4><%= t(:users) %></h4>
+          <p><%= t('joyride.users') %></p>
+        </li>
+        <li data-button="<%= t('joyride.end') %>" data-prev-text="<%= t('joyride.previous') %>">
+          <h4><%= t('joyride.final') %></h4>
+          <p>&nbsp;</p>
+        </li>
+      </ol>
+      <script>
+       jQuery(document).foundation('joyride','start');
+      </script>
+    <% end %>
 
   </body>
 </html>

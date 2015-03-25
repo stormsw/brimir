@@ -1,5 +1,5 @@
 # Brimir is a helpdesk system to handle email support requests.
-# Copyright (C) 2012-2014 Ivaldi http://ivaldi.nl
+# Copyright (C) 2012-2015 Ivaldi http://ivaldi.nl
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -16,30 +16,6 @@
 
 class TicketMailer < ActionMailer::Base
 
-  def notify_status_changed(ticket)
-    @ticket = ticket
-
-    mail(to: ticket.assignee.email, subject:
-        'Ticket status modified in ' + ticket.status + ' for: ' \
-        + ticket.subject)
-  end
-
-  def notify_priority_changed(ticket)
-    @ticket = ticket
-
-    mail(to: ticket.assignee.email, subject:
-        'Ticket priority modified in ' + ticket.priority + ' for: ' \
-        + ticket.subject)
-  end
-
-  def notify_assigned(ticket)
-    @ticket = ticket
-
-    mail(to: ticket.assignee.email, subject:
-        'Ticket assigned to you: ' + ticket.subject)
-  end
-
-
   def normalize_body(part, charset)
     part.body.decoded.force_encoding(charset).encode('UTF-8')
   end
@@ -49,14 +25,22 @@ class TicketMailer < ActionMailer::Base
 
     email = Mail.new(message)
 
+    # is this an address verification mail?
+    if VerificationMailer.receive(email)
+      return
+    end
+
     content = ''
 
     if email.multipart?
       if email.text_part
         content = normalize_body(email.text_part, email.text_part.charset)
         content_type = 'text'
-      else
+      elsif email.html_part
         content = normalize_body(email.html_part, email.html_part.charset)
+        content_type = 'html'
+      else
+        content = normalize_body(email.parts[0], email.parts[0].charset)
         content_type = 'html'
       end
     else
@@ -66,6 +50,12 @@ class TicketMailer < ActionMailer::Base
         content = email.body.decoded.encode('UTF-8')
       end
       content_type = 'text'
+    end
+
+    if email.charset
+      subject = email.subject.to_s.force_encoding(email.charset).encode('UTF-8')
+    else
+      subject = email.subject.to_s.encode('UTF-8')
     end
 
 
@@ -106,7 +96,7 @@ class TicketMailer < ActionMailer::Base
       # add new ticket
       ticket = Ticket.create!({
         from: email.from.first,
-        subject: email.subject,
+        subject: subject,
         content: content,
         message_id: email.message_id,
         content_type: content_type,
@@ -138,7 +128,14 @@ class TicketMailer < ActionMailer::Base
 
     if ticket != incoming
       incoming.set_default_notifications!
-      NotificationMailer.new_reply(incoming).deliver
+
+      incoming.notified_users.each do |user|
+        mail = NotificationMailer.new_reply(incoming, user)
+        mail.deliver_now
+        incoming.message_id = mail.message_id
+      end
+
+      incoming.save
     end
 
     return incoming

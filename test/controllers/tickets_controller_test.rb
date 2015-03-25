@@ -22,9 +22,12 @@ class TicketsControllerTest < ActionController::TestCase
 
     @ticket = tickets(:problem)
 
-
     # read_fixture doesn't work in ActionController::TestCase, so use File.new
     @simple_email = File.new('test/fixtures/ticket_mailer/simple').read
+  end
+
+  teardown do
+    I18n.locale = :en
   end
 
   test 'should get new as customer' do
@@ -49,7 +52,10 @@ class TicketsControllerTest < ActionController::TestCase
 
   test 'should create ticket when posted from MTA' do
 
-    assert_difference 'ActionMailer::Base.deliveries.size' do
+    # should ignore this in emails, but use application default
+    I18n.locale = :nl
+
+    assert_difference 'ActionMailer::Base.deliveries.size', User.agents.count do
       assert_difference 'Ticket.count' do
 
         post :create, message: @simple_email, format: :json
@@ -57,6 +63,9 @@ class TicketsControllerTest < ActionController::TestCase
         assert_response :success
       end
     end
+
+    # should have used English locale
+    assert_match 'View new ticket', ActionMailer::Base.deliveries.last.html_part.body.decoded
 
     refute_equal 0, assigns(:ticket).notified_users.count
 
@@ -81,8 +90,8 @@ class TicketsControllerTest < ActionController::TestCase
 
   test 'should create ticket when not signed in' do
 
-    assert_difference 'ActionMailer::Base.deliveries.size' do
-      assert_difference 'Ticket.count', 1 do
+    assert_difference 'ActionMailer::Base.deliveries.size', User.agents.count do
+      assert_difference 'Ticket.count' do
         post :create, ticket: {
             from: 'test@test.nl',
             content: @ticket.content,
@@ -99,7 +108,7 @@ class TicketsControllerTest < ActionController::TestCase
   test 'should create ticket when signed in' do
     sign_in users(:alice)
 
-    assert_difference 'ActionMailer::Base.deliveries.size' do
+    assert_difference 'ActionMailer::Base.deliveries.size', User.agents.count do
       assert_difference 'Ticket.count', 1 do
         post :create, ticket: {
             from: 'test@test.nl',
@@ -147,11 +156,14 @@ class TicketsControllerTest < ActionController::TestCase
     assert_select '[data-labelings]'
 
     # should contain this for label removing with javascript
-    assert_select '[data-labeling-id=?]',
-        @ticket.labelings.first.id
+    assert_select "[data-labeling-id='#{@ticket.labelings.first.id}']"
 
     # should contain this anchor for linking from notification email
-    assert_select '[id=reply-' + @ticket.replies.first.id.to_s + ']'
+    assert_select "[id=reply-#{@ticket.replies.first.id}]"
+
+    # should have this icon for label color update javascript (sidebar)
+    assert_select 'aside ul li i.fa-circle-o'
+
   end
 
   test 'should email assignee if ticket is assigned by somebody else' do

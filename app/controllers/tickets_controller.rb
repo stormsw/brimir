@@ -1,5 +1,5 @@
 # Brimir is a helpdesk system to handle email support requests.
-# Copyright (C) 2012-2014 Ivaldi http://ivaldi.nl
+# Copyright (C) 2012-2015 Ivaldi http://ivaldi.nl
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@ class TicketsController < ApplicationController
   before_filter :authenticate_user!, except: [:create, :new]
   load_and_authorize_resource :ticket, except: :create
   skip_authorization_check only: :create
+  skip_before_action :verify_authenticity_token, only: :create, if: 'request.format.json?'
 
   # this is needed for brimir integration in other sites
   before_filter :allow_cors, only: [:create, :new]
@@ -45,7 +46,8 @@ class TicketsController < ApplicationController
 
     respond_to do |format|
       format.html do
-        @tickets = @tickets.page(params[:page])
+        @tickets = @tickets.paginate(page: params[:page],
+            per_page: current_user.per_page)
       end
       format.csv do
         @tickets = @tickets.includes(:status_changes)
@@ -61,13 +63,13 @@ class TicketsController < ApplicationController
         if !@ticket.assignee.nil? && @ticket.assignee.id != current_user.id
 
           if @ticket.previous_changes.include? :assignee_id
-            TicketMailer.notify_assigned(@ticket).deliver
+            NotificationMailer.assigned(@ticket).deliver_now
 
           elsif @ticket.previous_changes.include? :status
-            TicketMailer.notify_status_changed(@ticket).deliver
+            NotificationMailer.status_changed(@ticket).deliver_now
 
           elsif @ticket.previous_changes.include? :priority
-            TicketMailer.notify_priority_changed(@ticket).deliver
+            NotificationMailer.priority_changed(@ticket).deliver_now
           end
 
         end
@@ -119,20 +121,27 @@ class TicketsController < ApplicationController
 
     if @ticket.save
 
-      if current_user.nil?
-        user = @ticket.user
-      else
-        user = current_user
-      end
-
-      Rule.apply_all(@ticket)
+      Rule.apply_all(@ticket) unless @ticket.is_a?(Reply)
 
       # where user notifications added?
       if @ticket.notified_users.count == 0
-        @ticket.set_default_notifications!(user)
+        @ticket.set_default_notifications!
       end
 
-      NotificationMailer.new_ticket(@ticket).deliver
+      # @ticket might be a Reply when via json post
+      if @ticket.is_a?(Ticket)
+        if @ticket.assignee.nil?
+          @ticket.notified_users.each do |user|
+            mail = NotificationMailer.new_ticket(@ticket, user)
+            mail.deliver_now
+            @ticket.message_id = mail.message_id
+          end
+
+          @ticket.save
+        else
+          NotificationMailer.assigned(@ticket).deliver_now
+        end
+      end
     end
 
     respond_to do |format|
@@ -141,7 +150,7 @@ class TicketsController < ApplicationController
         if @ticket.valid?
 
           if current_user.nil?
-            return render text: I18n::translate(:ticket_added)
+            render 'create'
           else
             redirect_to ticket_url(@ticket), notice: I18n::translate(:ticket_added)
           end
@@ -170,13 +179,19 @@ class TicketsController < ApplicationController
             :status,
             :assignee_id,
             :priority,
-            :message_id)
+            :message_id,
+            attachments_attributes: [
+              :file
+            ])
       else
         params.require(:ticket).permit(
             :from,
             :content,
             :subject,
-            :priority)
+            :priority,
+            attachments_attributes: [
+              :file
+            ])
       end
     end
 

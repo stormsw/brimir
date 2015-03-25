@@ -1,5 +1,5 @@
 # Brimir is a helpdesk system to handle email support requests.
-# Copyright (C) 2012-2014 Ivaldi http://ivaldi.nl
+# Copyright (C) 2012-2015 Ivaldi http://ivaldi.nl
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -14,12 +14,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-class Priority < ActiveRecord::Base
+module Tickets
+  # class to interact with all deleted tickets
+  class DeletedController < ApplicationController
+    def destroy
+      authorize! :destroy, Ticket
+      Ticket.deleted.destroy_all
 
-	validates_presence_of :name
-
-  has_many :tickets
-
-  scope :default, -> { where(default: true) }
-
+      redirect_to tickets_url(status: :deleted), notice: I18n.t(:trash_emptied)
+    end
+  end
 end

@@ -1,8 +1,8 @@
-<div class="row" style="border-bottom: 1px solid #bec8dc">
+<div class="row bb">
   <div class="medium-12 columns">
     <a class="pull-right mtm" href="#print" onclick="window.print()"><%= fa_icon 'print' %></a>
     <h3 class="mt">
-      <%= !@ticket.subject.nil? ? @ticket.subject : '<em>(' + t(:no_subject) + ')</em>'.html_safe %>
+      <%= !@ticket.subject.blank? ? @ticket.subject : "<em>(#{t(:no_subject)})</em>".html_safe %>
     </h3>
     <h5 class="subheader text-secondary mb">
       <%= t(:ticket_by_at, email: @ticket.user.email, at: l(@ticket.created_at.in_time_zone(current_user.time_zone), format: :long)) %>
@@ -12,7 +12,7 @@
 
 
 <div class="row collapse">
-  <div class="medium-9 columns" style="border-right: 1px solid #bec8dc">
+  <div class="medium-9 columns br">
     <div class="ma">
       <% if @ticket.content.blank? %>
         (<%= t(:no_content) %>)
@@ -82,8 +82,12 @@
   <div class="medium-3 columns">
     <div class="ma">
       <dl class="sticky">
-        <dt><%= t(:status) %></dt>
+        <dt><%= t(:ticket_id) %></dt>
+        <dd>
+          <%= @ticket.id %>
+        </dd>
 
+        <dt><%= t(:status) %></dt>
         <dd>
           <% if can? :update, @ticket %>
             <a href="#" data-dropdown="statuses-<%= @ticket.id %>">
@@ -146,16 +150,10 @@
               <%= f.hidden_field :labelable_id %>
               <%= f.hidden_field :labelable_type %>
 
-              <div class="row collapse">
-                <div class="small-9 columns">
-                  <%= f.fields_for :label, Label.new do |f| %>
-                    <%= f.text_field :name, label: false, placeholder: t(:label_name) %>
-                  <% end %>
-                </div>
-                <div class="small-3 columns">
-                  <%= f.button t(:add), type: 'submit', class: 'button postfix' %>
-                </div>
-              </div>
+              <%= f.fields_for :label, Label.new do |f| %>
+                <%= f.text_field :name, label: false, placeholder: t(:label_name), class: 'select2-create' %>
+              <% end %>
+              <%= f.button t(:add), type: 'submit', class: 'tiny radius button mtm' %>
             <% end %>
           <% else %>
             <ul class="inline-list">

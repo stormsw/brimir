@@ -1,5 +1,6 @@
 # author: https://github.com/JanneMantyharju
 fi:
+  language_name: suomi
 # layouts/application
   new_ticket: Uusi tiketti
   inbox: Saapuneet
@@ -29,8 +30,6 @@ fi:
   password_wont_change_without_opening_link: Salasanasi pysyy ennallaan, ellet avaa linkkiä ja vaihda itse salasanaasi.
 
 # tickets/index
-  tickets: Tiketit
-  tickets_containing: Tiketit jotka sisältävät
   priority: Prioriteetti
   replies: vastaukset
   no_subject: Ei otsikkoa
@@ -149,8 +148,3 @@ fi:
         status: Tila
         priority: Prioriteetti
         assignee_id: Suorittaja
-
-      reply:
-        to: Vastaanottaja
-        cc: Kopio
-        Bcc: Piilokopio

@@ -1,5 +1,6 @@
 # author: https://github.com/social-org
 fr-CA:
+  language_name: canadienne-française
 # layouts/application
   new_ticket: Nouveau Billet
   inbox: Boîte de réception
@@ -47,7 +48,6 @@ fr-CA:
   no_tickets_found: Aucun billet trouvé.
   search: Recherche
   minutes: minutes
-  export_these_tickets: Exporter ces billets
 
 # tickets/show
   ticket_by_at: Par %{email} a %{at}
@@ -176,11 +176,6 @@ fr-CA:
         status: Statut
         priority: Priorité
         assignee_id: Attribué
-
-      reply:
-        to: A
-        cc: Cc
-        Bcc: Bcc
 
       rule:
         filter_field: Champ

@@ -1,5 +1,5 @@
 # Brimir is a helpdesk system to handle email support requests.
-# Copyright (C) 2012-2014 Ivaldi http://ivaldi.nl
+# Copyright (C) 2012-2015 Ivaldi http://ivaldi.nl
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -23,14 +23,16 @@ class Ticket < ActiveRecord::Base
   belongs_to :assignee, class_name: 'User'
 
   has_many :attachments, as: :attachable, dependent: :destroy
+  accepts_nested_attributes_for :attachments, allow_destroy: true
+
   has_many :replies, dependent: :destroy
-  has_many :labelings, as: :labelable
+  has_many :labelings, as: :labelable, dependent: :destroy
   has_many :labels, through: :labelings
 
   has_many :notifications, as: :notifiable, dependent: :destroy
   has_many :notified_users, source: :user, through: :notifications
 
-  has_many :status_changes
+  has_many :status_changes, dependent: :destroy
 
   enum status: [:open, :closed, :deleted, :waiting]
   enum priority: [:unknown, :low, :medium, :high]
@@ -71,9 +73,10 @@ class Ticket < ActiveRecord::Base
 
   scope :search, ->(term) {
     if !term.nil?
-      term = '%' + term.downcase + '%'
-      where('LOWER(subject) LIKE ? OR LOWER(content) LIKE ?',
-          term, term)
+      term.gsub!(/[\\%_]/) { |m| "!#{m}" }
+      term = "%#{term.downcase}%"
+      where('LOWER(subject) LIKE ? ESCAPE ? OR LOWER(content) LIKE ? ESCAPE ?',
+          term, '!', term, '!')
     end
   }
 
@@ -90,25 +93,8 @@ class Ticket < ActiveRecord::Base
     end
   }
 
-  def set_default_notifications!(created_by)
-
-    # customer created ticket for another user
-    if !created_by.agent? && created_by != user
-      self.notified_user_ids = User.agents_to_notify.pluck(:id)
-      self.notified_user_ids << user.id
-
-    # ticket created by customer
-    elsif !created_by.agent?
-      self.notified_user_ids = User.agents_to_notify.pluck(:id)
-
-    # ticket created by agent for another user
-    elsif created_by.agent? && created_by != user
-      self.notified_user_ids = [user.id]
-
-    # agent created ticket for himself
-    else
-      self.notified_user_ids = []
-    end
+  def set_default_notifications!
+    self.notified_user_ids = User.agents_to_notify.pluck(:id)
   end
 
   def status_times

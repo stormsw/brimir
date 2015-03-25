@@ -1,5 +1,5 @@
 # Brimir is a helpdesk system to handle email support requests.
-# Copyright (C) 2012-2014 Ivaldi http://ivaldi.nl
+# Copyright (C) 2012-2015 Ivaldi http://ivaldi.nl
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -15,6 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class AttachmentsController < ApplicationController
+
+  before_filter :authenticate_user!, except: [:create, :new]
+  load_and_authorize_resource :attachment, except: :show
 
   def show
     @attachment = Attachment.find(params[:id])
@@ -40,5 +43,4 @@ class AttachmentsController < ApplicationController
       render text: I18n::translate(:file_not_found), status: :not_found
     end
   end
-
 end
