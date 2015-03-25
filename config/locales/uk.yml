@@ -38,9 +38,16 @@ uk:
   count_tickets:
     one: '%{count} тікет'
     other: 'Тікетів: %{count}'
+    few: '%{count} заявки'
+    many: '%{count} заявок'
+    other: '%{count} заявок'
+
   count_tickets_containing:
     one: '%{count} тікет що містить'
+    few: '%{count} тікет що містять'
+    many: '%{count} тікетів що містять'
     other: '%{count} тікетів що містить'
+
   priority: Пріорітет
   replies: відповіді
   no_subject: Немає теми
@@ -50,6 +57,7 @@ uk:
   minutes: хвилин
 
 # tickets/show
+  add: 'Ок'
   ticket_by_at: За %{email} в %{at}
   no_content: Немає контенту
   status: Статус
@@ -90,7 +98,7 @@ uk:
   attach_files: Додати файл(и)
   send_reply: Відповісти
   on_date_author_wrote: 'Від %{date}, %{author} було написано:'
-  notification_will_be_sent_to: Your notification will be sent to
+  notification_will_be_sent_to: 'Ваше нагадування буде надіслано на'
 
 # ticket_mailer/notify_assigned.text.erb
   ticket_assigned: Ваші назначені тікети
@@ -115,6 +123,10 @@ uk:
 
 # users/edit
   edit_user: Редагувати користувача
+  omniauth_connect_title: Авторизація через Google аккаунт
+  omniauth_connect_text: Активувати авторизацію через Google аккаунт. Після цього ви зможете "Входити через Google" як альтернатива для входу через email і пароль.
+  omniauth_connect_google_text: Звязати з Google аккаунтом
+
 
 # users/index
   email: Email
@@ -153,11 +165,15 @@ uk:
   edit_rule: Редагувати правило
   delete_rule: Видалити правило
   are_you_sure: Ви певні?
+  are_you_sure_empty_trash: 'Ви дійсно хочете очистити корзину'
 
 # controllers/rules
   rule_added: Додано правило
   rule_modified: Змінено правило
   rule_deleted: Видалено правило
+# email_addresses/index
+  new_email_address: Нова вихідна email адреса
+  email_addresses: Email адреса для вихідного повідомлення
 
 
   activerecord:
